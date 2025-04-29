@@ -1,0 +1,4 @@
+data/*.pkl
+data/*.zip
+model/__pycache__/
+result/

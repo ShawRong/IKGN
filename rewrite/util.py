@@ -21,6 +21,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 from torch.nn.parameter import Parameter
 
+# seen nowhere, I guess it's get used in kg generation
+# or not used at all.
 def shuffle(*arrays, **kwargs):
     require_indices = kwargs.get('indices', False)
     if len(set(len(x) for x in arrays)) != 1:
@@ -37,6 +39,7 @@ def shuffle(*arrays, **kwargs):
     else:
         return result
 
+# used in main.py line 52 & line 82 to load batches for training.
 def minibatch(*tensors, **kwargs):
     batch_size = kwargs.get('batch_size', 32)
     if len(tensors) == 1:
@@ -47,6 +50,7 @@ def minibatch(*tensors, **kwargs):
         for i in range(0, len(tensors[0]), batch_size):
             yield tuple(x[i:i + batch_size] for x in tensors)
 
+# used in no where. 
 def get_minibatches(X, mb_size, shuffle=True):
     X_shuff = X.copy()
     if shuffle:
@@ -55,6 +59,7 @@ def get_minibatches(X, mb_size, shuffle=True):
     for i in range(0, X_shuff.shape[0], mb_size):
         yield X_shuff[i:i + mb_size]
 
+# used in train in main.py
 def pad_batch_of_lists_masks(batch_of_lists, sequence_tim_batch, tim_dis_gap_batch, max_len):
     loc_padded = [l + [0] * (max_len - len(l)) for l in batch_of_lists] 
     tim_padded = [l + [0] * (max_len - len(l)) for l in sequence_tim_batch]
@@ -64,6 +69,7 @@ def pad_batch_of_lists_masks(batch_of_lists, sequence_tim_batch, tim_dis_gap_bat
     padde_mask_non_local = [[1.0] * (len(l)) + [0.0] * (max_len - len(l)) for l in batch_of_lists] 
     return loc_padded, tim_padded, padded_mask, padde_mask_non_local, tim_dis_gap_padded
 
+# used in test in main.py
 def pad_batch_of_lists_masks_test(batch_of_lists, max_len):
     padded = [l + [0] * (max_len - len(l)) for l in batch_of_lists]
     padded2 = [l[:-1] + [0] * (max_len - len(l) + 1) for l in batch_of_lists]
@@ -71,6 +77,8 @@ def pad_batch_of_lists_masks_test(batch_of_lists, max_len):
     padde_mask_non_local = [[1.0] * (len(l) - 1) + [0.0] * (max_len - len(l) + 1) for l in batch_of_lists]
     return padded, padded2, padded_mask, padde_mask_non_local
 
+
+# seen in main.py line307
 def caculate_poi_distance_time(args, poi_coors, trans, temp_max, distance_max):
     print("temporal distance matrix")
     tem_dis_score = {}
@@ -96,7 +104,7 @@ def caculate_poi_distance_time(args, poi_coors, trans, temp_max, distance_max):
     # pickle.dump(sim_matrix, open(args['data_dir'] + args['data'] +'_temporal_distance.pkl', 'wb'))
     return sim_matrix
 
-
+# used in main.py line 32
 def generate_input_history(data_neural, mode, candidate=None):
     data_train = {}
     train_idx = {}  
@@ -135,6 +143,7 @@ def generate_input_history(data_neural, mode, candidate=None):
         train_idx[u] = train_id 
     return data_train, train_idx
 
+# used in main.py line 161
 def generate_input_long_history(data_neural, mode, candidate=None):
     data_train = {}
     train_idx = {}
@@ -185,6 +194,8 @@ def generate_input_long_history(data_neural, mode, candidate=None):
         train_idx[u] = train_id
     return data_train, train_idx
 
+
+#used in train and eval.
 def generate_queue(train_idx, mode, mode2):
     user = list(train_idx.keys())
     train_queue = list()
@@ -207,7 +218,7 @@ def generate_queue(train_idx, mode, mode2):
                 train_queue.append((u, i))
     return train_queue
 
-
+# seen in generate_detailed_batch_data
 def create_dilated_rnn_input(session_sequence_current,poi_temporal_distance_matrix):
     sequence_length = len(session_sequence_current)
     session_sequence_current.reverse()
@@ -223,6 +234,7 @@ def create_dilated_rnn_input(session_sequence_current,poi_temporal_distance_matr
     return session_dilated_rnn_input_index
 
 
+# seen in main.py line54
 def generate_detailed_batch_data(n_locs,one_train_batch,data_neural,tim_dis_dict,n_tim_rel,poi_temporal_distance_matrix):
     session_id_batch = []
     user_id_batch = []
@@ -246,7 +258,7 @@ def generate_detailed_batch_data(n_locs,one_train_batch,data_neural,tim_dis_dict
         sequences_dilated_input_batch.append(session_sequence_dilated_input)
     return user_id_batch, session_id_batch, sequence_batch, sequences_lens_batch, sequences_tim_batch,tim_dis_gap_batch,sequences_dilated_input_batch
 
-
+# seen in no where
 def construct_data(kg_upt_data,kg_ptp_data,tim_dis_dict,n_tim_rel):
     train_kg_ptp,train_kg_upt, train_kg =[],[],[]
     train_kg_dict = collections.defaultdict(list)
@@ -270,6 +282,7 @@ def construct_data(kg_upt_data,kg_ptp_data,tim_dis_dict,n_tim_rel):
     print('load KG data.')
     return train_kg_dict, train_kg
 
+#seen in main.py line 83
 def generate_kg_batch(kg_dict,train_batch,n_entity,device):
     batch_head,batch_relation, batch_pos_tail, batch_neg_tail = [], [], [], []
     for triple in train_batch:
@@ -287,6 +300,7 @@ def generate_kg_batch(kg_dict,train_batch,n_entity,device):
     batch_neg_tail = Variable(torch.LongTensor(np.array(batch_neg_tail))).to(device)
     return batch_head, batch_relation, batch_pos_tail, batch_neg_tail
 
+# seen in generate_kg_batch in util.py
 def sample_neg_triples_for_h(kg_dict,n_entities, head, relation, n_sample_neg_triples):
     pos_triples = kg_dict[head]
 
@@ -299,6 +313,7 @@ def sample_neg_triples_for_h(kg_dict,n_entities, head, relation, n_sample_neg_tr
             sample_neg_tails.append(tail)
     return sample_neg_tails
 
+# seen in caculate_poi_distance_time
 def geodistance(lng1,lat1,lng2,lat2):
     lng1, lat1, lng2, lat2 = map(radians, [float(lng1), float(lat1), float(lng2), float(lat2)])
     dlon=lng2-lng1
@@ -307,6 +322,8 @@ def geodistance(lng1,lat1,lng2,lat2):
     distance=2*asin(sqrt(a))*6371*1000
     distance=round(distance/1000,3)
     return distance
+
+#seen in main.py line 362
 def generate_kg_h_r_t(train_kg,n_users_entities_catgorary):
     h_list = []
     t_list = []
@@ -336,6 +353,7 @@ def generate_kg_h_r_t(train_kg,n_users_entities_catgorary):
     laplacian_dict,A_in=create_adjacency_dict(train_relation_dict,n_users_entities_catgorary)
     return h_list,r_list,t_list,laplacian_dict,A_in,train_kg_dict1,np.array(kg_data).tolist()
 
+# seen in generate_kg_h_r_t
 def create_adjacency_dict(train_relation_dict,n_users_entities_catgorary):#
     adjacency_dict = {}
     for r, ht_list in train_relation_dict.items():
@@ -347,6 +365,8 @@ def create_adjacency_dict(train_relation_dict,n_users_entities_catgorary):#
         adjacency_dict[r] = adj
     laplacian_dict, A_in=create_laplacian_dict(adjacency_dict)
     return laplacian_dict, A_in
+
+# used in util.py create_adjacency_dict
 def create_laplacian_dict(adjacency_dict):
     def random_walk_norm_lap(adj):
         rowsum = np.array(adj.sum(axis=1))
@@ -363,6 +383,8 @@ def create_laplacian_dict(adjacency_dict):
     A_in = sum(laplacian_dict.values())
     A_in1 = convert_coo2tensor(A_in.tocoo())
     return laplacian_dict,A_in1
+
+# used in laplacian
 def convert_coo2tensor(coo):
     values = coo.data
     indices = np.vstack((coo.row, coo.col))
